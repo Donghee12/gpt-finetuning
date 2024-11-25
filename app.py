@@ -1,12 +1,25 @@
-# 사용자로부터 이름을 입력받고, 인사하는 프로그램
+from openai import OpenAI
+import dotenv
 
-def greet_user():
-    name = input("이름을 입력하세요: ")  # 사용자로부터 이름을 입력받음
-    print(f"안녕하세요, {name}님! 반갑습니다.")  # 입력받은 이름을 포함해 인사 출력
+dotenv_path = dotenv.find_dotenv()
+APIKEY = dotenv.get_key(dotenv_path, "GPT_SECRET_KEY")  # .env 파일을 만들어 API 키관리
+client = OpenAI(api_key=APIKEY)
 
-def commit():
-    print("ㅎㅇㅎㅇ")
-if __name__ == "__main__":
-    greet_user()  # 함수 실행
-    commit()
+# 1. 데이터셋 업로드
+res = client.files.create(
+  file=open("data/data_conversational.jsonl", "rb"),
+  purpose="fine-tune"
+)  # 내 데이터셋 을 openai 내 계정에 업로드
 
+resId = res.id
+print(f"trained file id : {resId}")
+
+# 2. 파인튜닝 진행
+response = client.fine_tuning.jobs.create(
+  training_file=resId,  # 업로드된 나의 데이터셋을 아이디로 찾아 파인튜닝진행
+  model="gpt-4o-mini-2024-07-18", 
+  hyperparameters={
+    "n_epochs":5,
+    "batch_size": 1
+  }
+)
